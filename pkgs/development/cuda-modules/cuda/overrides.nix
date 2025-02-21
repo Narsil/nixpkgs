@@ -229,7 +229,6 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
         "nsight-systems/*/*/Mesa"
         "nsight-systems/*/*/python/bin/python"
         "nsight-systems/*/*/libexec"
-        "nsight-systems/*/*/Plugins"
       ];
       postPatch =
         prevAttrs.postPatch or ""
