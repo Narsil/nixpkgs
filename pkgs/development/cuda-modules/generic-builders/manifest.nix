@@ -27,7 +27,6 @@
   # See ./modules/generic/manifests/feature/release.nix
   featureRelease,
   cudaMajorMinorVersion,
-  boost178,
 }:
 let
   inherit (lib)
@@ -207,7 +206,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     # nvcc forces us to use an older gcc
     # NB: We don't actually know if this is the right thing to do
     stdenv.cc.cc.lib
-    boost178
   ];
 
   # Picked up by autoPatchelf

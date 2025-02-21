@@ -256,15 +256,14 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
         final.pkgs.xorg.libXdamage
         final.pkgs.xorg.libXrandr
         final.pkgs.xorg.libXtst
-        final.pkgs.kdePackages.qtwayland
-        final.pkgs.kdePackages.qtbase
-        qt.qtbase
+        (qt.qtbase or qt.full)
         (qt.qtdeclarative or qt.full)
         (qt.qtsvg or qt.full)
         (qt.qtpositioning or qt.full)
         (qt.qtscxml or qt.full)
         (qt.qttools or qt.full)
-        (qt.qtwebenging or qt.full)
+        (qt.qtwebengine or qt.full)
+        (qt.qtwayland or qt.full)
         qtWaylandPlugins
       ];
       postInstall =
