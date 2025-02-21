@@ -370,10 +370,10 @@ filterAndCreateOverrides {
           versionString = with lib.versions; "${majorMinor version}.${patch version}";
         in
         ''
-          moveToOutput 'nsight-systems/*/host-linux-*' "''${!outputBin}"
-          moveToOutput 'nsight-systems/*/target-linux-*' "''${!outputBin}"
-          substituteInPlace $bin/bin/nsys $bin/bin/nsys-ui \
-            --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${versionString}
+          # moveToOutput 'nsight-systems/*/host-linux-*' "''${!outputBin}"
+          # moveToOutput 'nsight-systems/*/target-linux-*' "''${!outputBin}"
+          # substituteInPlace $bin/bin/nsys $bin/bin/nsys-ui \
+          #   --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${versionString}
         '';
     };
 
