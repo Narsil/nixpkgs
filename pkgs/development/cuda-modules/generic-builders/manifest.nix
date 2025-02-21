@@ -28,7 +28,6 @@
   featureRelease,
   cudaMajorMinorVersion,
   boost178,
-  e2fsprog,
 }:
 let
   inherit (lib)
@@ -209,7 +208,6 @@ backendStdenv.mkDerivation (finalAttrs: {
     # NB: We don't actually know if this is the right thing to do
     stdenv.cc.cc.lib
     boost178
-    e2fsprog
   ];
 
   # Picked up by autoPatchelf
