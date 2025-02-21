@@ -258,6 +258,7 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
         final.pkgs.xorg.libXrandr
         final.pkgs.xorg.libXtst
         final.pkgs.kdePackages.qtwayland
+        final.pkgs.kdePackages.qtbase
         qt.qtbase
         (qt.qtdeclarative or qt.full)
         (qt.qtsvg or qt.full)
