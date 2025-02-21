@@ -1,4 +1,8 @@
-{cudaVersion, lib, addDriverRunpath}:
+{
+  cudaVersion,
+  lib,
+  addDriverRunpath,
+}:
 let
   inherit (lib) attrsets lists strings;
   # cudaVersionOlder : Version -> Boolean
@@ -8,96 +12,92 @@ let
 
   addBuildInputs =
     drv: buildInputs:
-    drv.overrideAttrs (prevAttrs: {buildInputs = prevAttrs.buildInputs ++ buildInputs;});
+    drv.overrideAttrs (prevAttrs: {
+      buildInputs = prevAttrs.buildInputs ++ buildInputs;
+    });
 in
 # NOTE: Filter out attributes that are not present in the previous version of
 # the package set. This is necessary to prevent the appearance of attributes
 # like `cuda_nvcc` in `cudaPackages_10_0, which predates redistributables.
 final: prev:
 attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
-  libcufile = prev.libcufile.overrideAttrs (
-    prevAttrs: {
-      buildInputs = prevAttrs.buildInputs ++ [
-        final.libcublas.lib
-        final.pkgs.numactl
-        final.pkgs.rdma-core
-      ];
-      # Before 11.7 libcufile depends on itself for some reason.
-      autoPatchelfIgnoreMissingDeps =
-        prevAttrs.autoPatchelfIgnoreMissingDeps
-        ++ lists.optionals (cudaVersionOlder "11.7") [ "libcufile.so.0" ];
-    }
-  );
+  libcufile = prev.libcufile.overrideAttrs (prevAttrs: {
+    buildInputs = prevAttrs.buildInputs ++ [
+      final.libcublas.lib
+      final.pkgs.numactl
+      final.pkgs.rdma-core
+    ];
+    # Before 11.7 libcufile depends on itself for some reason.
+    autoPatchelfIgnoreMissingDeps =
+      prevAttrs.autoPatchelfIgnoreMissingDeps
+      ++ lists.optionals (cudaVersionOlder "11.7") [ "libcufile.so.0" ];
+  });
 
   libcusolver = addBuildInputs prev.libcusolver (
     # Always depends on this
-    [final.libcublas.lib]
+    [ final.libcublas.lib ]
     # Dependency from 12.0 and on
-    ++ lists.optionals (cudaVersionAtLeast "12.0") [final.libnvjitlink.lib]
+    ++ lists.optionals (cudaVersionAtLeast "12.0") [ final.libnvjitlink.lib ]
     # Dependency from 12.1 and on
-    ++ lists.optionals (cudaVersionAtLeast "12.1") [final.libcusparse.lib]
+    ++ lists.optionals (cudaVersionAtLeast "12.1") [ final.libcusparse.lib ]
   );
 
   libcusparse = addBuildInputs prev.libcusparse (
-    lists.optionals (cudaVersionAtLeast "12.0") [final.libnvjitlink.lib]
+    lists.optionals (cudaVersionAtLeast "12.0") [ final.libnvjitlink.lib ]
   );
 
-  cuda_cudart = prev.cuda_cudart.overrideAttrs (
-    prevAttrs: {
-      # Remove once cuda-find-redist-features has a special case for libcuda
-      outputs =
-        prevAttrs.outputs
-        ++ lists.optionals (!(builtins.elem "stubs" prevAttrs.outputs)) [ "stubs" ];
+  cuda_cudart = prev.cuda_cudart.overrideAttrs (prevAttrs: {
+    # Remove once cuda-find-redist-features has a special case for libcuda
+    outputs =
+      prevAttrs.outputs
+      ++ lists.optionals (!(builtins.elem "stubs" prevAttrs.outputs)) [ "stubs" ];
 
-      allowFHSReferences = false;
+    allowFHSReferences = false;
 
-      # The libcuda stub's pkg-config doesn't follow the general pattern:
-      postPatch =
-        prevAttrs.postPatch or ""
-        + ''
-          while IFS= read -r -d $'\0' path ; do
-            sed -i \
-              -e "s|^libdir\s*=.*/lib\$|libdir=''${!outputLib}/lib/stubs|" \
-              -e "s|^Libs\s*:\(.*\)\$|Libs: \1 -Wl,-rpath,${addDriverRunpath.driverLink}/lib|" \
-              "$path"
-          done < <(find -iname 'cuda-*.pc' -print0)
-        ''
-        + ''
-          # Namelink may not be enough, add a soname.
-          # Cf. https://gitlab.kitware.com/cmake/cmake/-/issues/25536
-          if [[ -f lib/stubs/libcuda.so && ! -f lib/stubs/libcuda.so.1 ]] ; then
-            ln -s libcuda.so lib/stubs/libcuda.so.1
-          fi
-        '';
+    # The libcuda stub's pkg-config doesn't follow the general pattern:
+    postPatch =
+      prevAttrs.postPatch or ""
+      + ''
+        while IFS= read -r -d $'\0' path ; do
+          sed -i \
+            -e "s|^libdir\s*=.*/lib\$|libdir=''${!outputLib}/lib/stubs|" \
+            -e "s|^Libs\s*:\(.*\)\$|Libs: \1 -Wl,-rpath,${addDriverRunpath.driverLink}/lib|" \
+            "$path"
+        done < <(find -iname 'cuda-*.pc' -print0)
+      ''
+      + ''
+        # Namelink may not be enough, add a soname.
+        # Cf. https://gitlab.kitware.com/cmake/cmake/-/issues/25536
+        if [[ -f lib/stubs/libcuda.so && ! -f lib/stubs/libcuda.so.1 ]] ; then
+          ln -s libcuda.so lib/stubs/libcuda.so.1
+        fi
+      '';
 
-      postFixup =
-        prevAttrs.postFixup or ""
-        + ''
-          moveToOutput lib/stubs "$stubs"
-          ln -s "$stubs"/lib/stubs/* "$stubs"/lib/
-          ln -s "$stubs"/lib/stubs "''${!outputLib}/lib/stubs"
-        '';
-    }
-  );
+    postFixup =
+      prevAttrs.postFixup or ""
+      + ''
+        moveToOutput lib/stubs "$stubs"
+        ln -s "$stubs"/lib/stubs/* "$stubs"/lib/
+        ln -s "$stubs"/lib/stubs "''${!outputLib}/lib/stubs"
+      '';
+  });
 
-  cuda_compat = prev.cuda_compat.overrideAttrs (
-    prevAttrs: {
-      autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [
-        "libnvrm_gpu.so"
-        "libnvrm_mem.so"
-        "libnvdla_runtime.so"
-      ];
-      # `cuda_compat` only works on aarch64-linux, and only when building for Jetson devices.
-      badPlatformsConditions = prevAttrs.badPlatformsConditions // {
-        "Trying to use cuda_compat on aarch64-linux targeting non-Jetson devices" =
-          !final.flags.isJetsonBuild;
-      };
-    }
-  );
+  cuda_compat = prev.cuda_compat.overrideAttrs (prevAttrs: {
+    autoPatchelfIgnoreMissingDeps = prevAttrs.autoPatchelfIgnoreMissingDeps ++ [
+      "libnvrm_gpu.so"
+      "libnvrm_mem.so"
+      "libnvdla_runtime.so"
+    ];
+    # `cuda_compat` only works on aarch64-linux, and only when building for Jetson devices.
+    badPlatformsConditions = prevAttrs.badPlatformsConditions // {
+      "Trying to use cuda_compat on aarch64-linux targeting non-Jetson devices" =
+        !final.flags.isJetsonBuild;
+    };
+  });
 
   cuda_gdb = addBuildInputs prev.cuda_gdb (
     # x86_64 only needs gmp from 12.0 and on
-    lists.optionals (cudaVersionAtLeast "12.0") [final.pkgs.gmp]
+    lists.optionals (cudaVersionAtLeast "12.0") [ final.pkgs.gmp ]
   );
 
   cuda_nvcc = prev.cuda_nvcc.overrideAttrs (
@@ -176,9 +176,9 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
     }
   );
 
-  cuda_nvprof = prev.cuda_nvprof.overrideAttrs (
-    prevAttrs: {buildInputs = prevAttrs.buildInputs ++ [final.cuda_cupti.lib];}
-  );
+  cuda_nvprof = prev.cuda_nvprof.overrideAttrs (prevAttrs: {
+    buildInputs = prevAttrs.buildInputs ++ [ final.cuda_cupti.lib ];
+  });
 
   cuda_demo_suite = addBuildInputs prev.cuda_demo_suite [
     final.pkgs.freeglut
@@ -190,23 +190,19 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
   ];
 
   nsight_compute = prev.nsight_compute.overrideAttrs (
-    prevAttrs: {
-      nativeBuildInputs =
-        prevAttrs.nativeBuildInputs
-        ++ (
-          if (strings.versionOlder prev.nsight_compute.version "2022.2.0") then
-            [final.pkgs.qt5.wrapQtAppsHook]
-          else
-            [final.pkgs.qt6.wrapQtAppsHook]
-        );
-      buildInputs =
-        prevAttrs.buildInputs
-        ++ (
-          if (strings.versionOlder prev.nsight_compute.version "2022.2.0") then
-            [final.pkgs.qt5.qtwebview]
-          else
-            [final.pkgs.qt6.qtwebview]
-        );
+    prevAttrs:
+    let
+      qt = if lib.versionOlder prevAttrs.version "2022.4.2.1" then final.pkgs.qt5 else final.pkgs.qt6;
+    in
+    {
+      nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ qt.wrapQtAppsHook ];
+      buildInputs = prevAttrs.buildInputs ++ [
+        qt.qtwebview
+        final.pkgs.rdma-core
+        final.pkgs.ucx
+        final.pkgs.e2fsprogs
+        qt.qtwayland
+      ];
     }
   );
 
@@ -241,6 +237,7 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
           for path in $rmPatterns ; do
             rm -r "$path"
           done
+          patchShebangs nsight-systems
         '';
       nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ qt.wrapQtAppsHook ];
       buildInputs = prevAttrs.buildInputs ++ [
@@ -260,11 +257,45 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
         final.pkgs.xorg.libXdamage
         final.pkgs.xorg.libXrandr
         final.pkgs.xorg.libXtst
+        final.pkgs.kdePackages.qtwayland
         qt.qtbase
         (qt.qtdeclarative or qt.full)
         (qt.qtsvg or qt.full)
+        (qt.qtpositioning or qt.full)
+        (qt.qtscxml or qt.full)
+        (qt.qttools or qt.full)
+        (qt.qtwebenging or qt.full)
         qtWaylandPlugins
       ];
+      postInstall =
+        # 1. Move dependencies of nsys, nsys-ui binaries to bin output
+        # 2. Fix paths in wrapper scripts
+        let
+          inherit (prev.nsight_systems) version;
+          versionString = with lib.versions; "${majorMinor version}.${patch version}";
+        in
+        ''
+          moveToOutput 'nsight-systems/${versionString}/host-linux-*' "''${!outputBin}"
+          moveToOutput 'nsight-systems/${versionString}/target-linux-*' "''${!outputBin}"
+          substituteInPlace $bin/bin/nsys $bin/bin/nsys-ui \
+            --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${versionString}
+          for qtlib in $bin/nsight-systems/${versionString}/host-linux-x64/Plugins/*/libq*.so; do
+            qtdir=$(basename $(dirname $qtlib))
+            filename=$(basename $qtlib)
+            for qtpkgdir in ${
+              lib.concatMapStringsSep " " (x: qt.${x}) [
+                "qtbase"
+                "qtimageformats"
+                "qtsvg"
+                "qtwayland"
+              ]
+            }; do
+              if [ -e $qtpkgdir/lib/qt-6/plugins/$qtdir/$filename ]; then
+                ln -snf $qtpkgdir/lib/qt-6/plugins/$qtdir/$filename $qtlib
+              fi
+            done
+          done
+        '';
 
       # Older releases require boost 1.70 deprecated in Nixpkgs
       meta.broken = prevAttrs.meta.broken or false || lib.versionOlder final.cudaVersion "11.8";
