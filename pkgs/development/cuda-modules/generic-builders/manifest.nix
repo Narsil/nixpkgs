@@ -292,6 +292,7 @@ backendStdenv.mkDerivation (finalAttrs: {
     "libcuda.so"
     "libcuda.so.*"
     "libQtPropertyBrowser.so"
+    "libQt6WlShellIntegration.so.6"
   ];
 
   # _multioutPropagateDev() currently expects a space-separated string rather than an array
