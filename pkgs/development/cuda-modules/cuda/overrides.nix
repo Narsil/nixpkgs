@@ -263,6 +263,9 @@ filterAndCreateOverrides {
   nsight_compute =
     {
       lib,
+      rdma-core,
+      ucx,
+      e2fsprogs,
       qt5 ? null,
       qt6 ? null,
     }:
@@ -275,7 +278,13 @@ filterAndCreateOverrides {
     in
     {
       nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ wrapQtAppsHook ];
-      buildInputs = prevAttrs.buildInputs ++ [ qtwebview ];
+      buildInputs = prevAttrs.buildInputs ++ [
+        qtwebview
+        rdma-core
+        ucx
+        e2fsprogs
+        qt.qtwayland
+      ];
       brokenConditions = prevAttrs.brokenConditions // {
         "Qt 5 missing (<2022.2.0)" = !(versionOlder version "2022.2.0" -> qt5 != null);
         "Qt 6 missing (>=2022.2.0)" = !(versionAtLeast version "2022.2.0" -> qt6 != null);
@@ -357,7 +366,8 @@ filterAndCreateOverrides {
         xorg.libXtst
         libssh
       ];
-
+      # Seems it's now a shell script.
+      dontWrapQtApps = true;
       brokenConditions = prevAttrs.brokenConditions // {
         # Older releases require boost 1.70, which is deprecated in Nixpkgs
         "CUDA too old (<11.8)" = cudaOlder "11.8";
