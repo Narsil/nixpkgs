@@ -331,10 +331,8 @@ filterAndCreateOverrides {
         prevAttrs.postPatch or ""
         + ''
           for path in $rmPatterns; do
-            rm -r $path
+            rm -r "$path"
           done
-        ''
-        + ''
           patchShebangs nsight-systems
         '';
       nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ qt.wrapQtAppsHook ];
