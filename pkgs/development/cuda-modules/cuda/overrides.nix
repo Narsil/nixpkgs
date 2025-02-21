@@ -197,10 +197,10 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
     {
       nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ qt.wrapQtAppsHook ];
       buildInputs = prevAttrs.buildInputs ++ [
-        qt.qtwebview
         final.pkgs.rdma-core
         final.pkgs.ucx
         final.pkgs.e2fsprogs
+        qt.qtwebview
         qt.qtwayland
       ];
     }
@@ -229,6 +229,7 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
         "nsight-systems/*/*/Mesa"
         "nsight-systems/*/*/python/bin/python"
         "nsight-systems/*/*/libexec"
+        "nsight-systems/*/*/Plugins"
       ];
       postPatch =
         prevAttrs.postPatch or ""
@@ -256,14 +257,15 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
         final.pkgs.xorg.libXdamage
         final.pkgs.xorg.libXrandr
         final.pkgs.xorg.libXtst
-        (qt.qtbase or qt.full)
+        final.pkgs.libssh
+        qt.qtbase
         (qt.qtdeclarative or qt.full)
         (qt.qtsvg or qt.full)
+        (qt.qtimageformats or qt.full)
         (qt.qtpositioning or qt.full)
         (qt.qtscxml or qt.full)
         (qt.qttools or qt.full)
         (qt.qtwebengine or qt.full)
-        (qt.qtwayland or qt.full)
         qtWaylandPlugins
       ];
       postInstall =
@@ -278,22 +280,6 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
           moveToOutput 'nsight-systems/${versionString}/target-linux-*' "''${!outputBin}"
           substituteInPlace $bin/bin/nsys $bin/bin/nsys-ui \
             --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${versionString}
-          for qtlib in $bin/nsight-systems/${versionString}/host-linux-x64/Plugins/*/libq*.so; do
-            qtdir=$(basename $(dirname $qtlib))
-            filename=$(basename $qtlib)
-            for qtpkgdir in ${
-              lib.concatMapStringsSep " " (x: qt.${x}) [
-                "qtbase"
-                "qtimageformats"
-                "qtsvg"
-                "qtwayland"
-              ]
-            }; do
-              if [ -e $qtpkgdir/lib/qt-6/plugins/$qtdir/$filename ]; then
-                ln -snf $qtpkgdir/lib/qt-6/plugins/$qtdir/$filename $qtlib
-              fi
-            done
-          done
         '';
 
       # Older releases require boost 1.70 deprecated in Nixpkgs
