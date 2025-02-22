@@ -226,11 +226,10 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
         "nsight-systems/*/*/libboost*"
         "nsight-systems/*/*/lib{ssl,ssh,crypto}*"
         "nsight-systems/*/*/lib{arrow,jpeg}*"
-        # "nsight-systems/*/*/Mesa"
+        "nsight-systems/*/*/Mesa"
         "nsight-systems/*/*/python/bin/python"
         "nsight-systems/*/*/libexec"
         "nsight-systems/*/*/Plugins/tls"
-        # "nsight-systems/*/*/Plugins"
       ];
       postPatch =
         prevAttrs.postPatch or ""
@@ -239,7 +238,6 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
             rm -r "$path"
           done
           patchShebangs nsight-systems
-          wrapQtApp "$out/nsight_systems/host-linux-x64/nsys-ui.bin"
         '';
       nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ qt.wrapQtAppsHook ];
       dontWrapQtApps = true;
@@ -287,7 +285,6 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
             --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${versionString}
 
           wrapQtApp "$bin/nsight-systems/${versionString}/host-linux-x64/nsys-ui.bin"
-          addOpenGLRunpath --force-rpath $bin/nsight-systems/${versionString}/host-linux-x64/lib*.so
         '';
 
       # Older releases require boost 1.70 deprecated in Nixpkgs
