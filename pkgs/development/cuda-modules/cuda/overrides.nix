@@ -238,8 +238,10 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
             rm -r "$path"
           done
           patchShebangs nsight-systems
+          wrapQtApp "$out/nsight_systems/host-linux-x64/nsys-ui.bin"
         '';
       nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [ qt.wrapQtAppsHook ];
+      dontWrapQtApps = true;
       buildInputs = prevAttrs.buildInputs ++ [
         final.cuda_cudart.stubs
         final.pkgs.alsa-lib
@@ -280,6 +282,8 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
           moveToOutput 'nsight-systems/${versionString}/target-linux-*' "''${!outputBin}"
           substituteInPlace $bin/bin/nsys $bin/bin/nsys-ui \
             --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${versionString}
+
+          addOpenGLRunpath --force-rpath $out/nsight_systems/host-linux-x64/lib*.so
         '';
 
       # Older releases require boost 1.70 deprecated in Nixpkgs
