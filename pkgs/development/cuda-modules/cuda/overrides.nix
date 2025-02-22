@@ -221,15 +221,16 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
       # An ad hoc replacement for
       # https://github.com/ConnorBaker/cuda-redist-find-features/issues/11
       env.rmPatterns = toString [
-        "nsight-systems/*/*/libQt*"
+        "nsight-systems/*/*/libQt6*"
         "nsight-systems/*/*/libstdc*"
         "nsight-systems/*/*/libboost*"
         "nsight-systems/*/*/lib{ssl,ssh,crypto}*"
         "nsight-systems/*/*/lib{arrow,jpeg}*"
-        "nsight-systems/*/*/Mesa"
+        # "nsight-systems/*/*/Mesa"
         "nsight-systems/*/*/python/bin/python"
         "nsight-systems/*/*/libexec"
-        "nsight-systems/*/*/Plugins"
+        "nsight-systems/*/*/Plugins/tls"
+        # "nsight-systems/*/*/Plugins"
       ];
       postPatch =
         prevAttrs.postPatch or ""
@@ -268,6 +269,7 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
         (qt.qtscxml or qt.full)
         (qt.qttools or qt.full)
         (qt.qtwebengine or qt.full)
+        (qt.qtwayland or qt.full)
         qtWaylandPlugins
       ];
       postInstall =
@@ -280,10 +282,12 @@ attrsets.filterAttrs (attr: _: (builtins.hasAttr attr prev)) {
         ''
           moveToOutput 'nsight-systems/${versionString}/host-linux-*' "''${!outputBin}"
           moveToOutput 'nsight-systems/${versionString}/target-linux-*' "''${!outputBin}"
+
           substituteInPlace $bin/bin/nsys $bin/bin/nsys-ui \
             --replace-fail 'nsight-systems-#VERSION_RSPLIT#' nsight-systems/${versionString}
 
-          addOpenGLRunpath --force-rpath $out/nsight_systems/host-linux-x64/lib*.so
+          wrapQtApp "$bin/nsight-systems/${versionString}/host-linux-x64/nsys-ui.bin"
+          addOpenGLRunpath --force-rpath $bin/nsight-systems/${versionString}/host-linux-x64/lib*.so
         '';
 
       # Older releases require boost 1.70 deprecated in Nixpkgs

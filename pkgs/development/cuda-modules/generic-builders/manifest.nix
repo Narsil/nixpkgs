@@ -277,7 +277,8 @@ backendStdenv.mkDerivation (finalAttrs: {
   autoPatchelfIgnoreMissingDeps = [
     "libcuda.so"
     "libcuda.so.*"
-    "libQtPropertyBrowser.so"
+    # "libQtPropertyBrowser.so"
+    "libtiff.so.5"
   ];
 
   # The out output leverages the same functionality which backs the `symlinkJoin` function in
